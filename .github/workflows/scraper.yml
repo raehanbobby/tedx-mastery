@@ -1,0 +1,41 @@
+name: TEDx Global Scraper
+
+on:
+  schedule:
+    # Weekly — every Monday at 8am UTC
+    - cron: "0 8 * * 1"
+    # Monthly instead — 1st of the month at 8am UTC
+    # - cron: "0 8 1 * *"
+  workflow_dispatch:   # lets you trigger manually anytime
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper (all regions)
+        env:
+          EMAIL_FROM:     ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO:       ${{ secrets.EMAIL_TO }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python tedx_global_scraper.py
+
+        # To run specific regions instead, use:
+        # run: python tedx_global_scraper.py --regions "Canada,USA,UK"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: tedx-global-results
+          path: |
+            tedx_global_results.csv
+            tedx_global_report.html
