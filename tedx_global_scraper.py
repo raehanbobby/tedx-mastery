@@ -52,10 +52,10 @@ CONFIG = {
     "output_html": "tedx_global_report.html",
 
     # --- Email (optional) ---
-    "email_enabled":  False,
-    "email_from":     "",
-    "email_to":       "",
-    "email_password": "",
+    "email_enabled":  True,
+    "email_from":     "raehanbobby@mg.networkanytime.com",
+    "email_to":       "raehanbobby@gmail.com",
+    "email_password": "57Ananda14!!",
 
     # --- Politeness delay between requests (seconds) ---
     "delay": 2,
