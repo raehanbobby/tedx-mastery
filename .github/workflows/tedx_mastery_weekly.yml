@@ -2,37 +2,30 @@ name: TEDx Mastery — Weekly Database Update
 
 on:
   schedule:
-    # Every Monday at 8:00 AM EST (13:00 UTC)
     - cron: "0 13 * * 1"
-
-  # Also lets you trigger manually from the GitHub Actions tab anytime
   workflow_dispatch:
     inputs:
       seed_file:
         description: "Seed CSV filename (leave blank unless re-seeding)"
         required: false
         default: ""
-      regions:
-        description: "Regions to scrape e.g. Canada,USA (blank = all)"
-        required: false
-        default: ""
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   update-database:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Check out the repo ────────────────────────────
       - name: Check out repo
         uses: actions/checkout@v4
 
-      # ── 2. Set up Python ─────────────────────────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # ── 3. Install dependencies ──────────────────────────
       - name: Install dependencies
         run: |
           pip install \
@@ -42,9 +35,6 @@ jobs:
             openpyxl \
             googlesearch-python
 
-      # ── 4. Restore master database from cache ────────────
-      # This keeps the database growing across runs without
-      # committing the Excel file back to the repo every week.
       - name: Restore master database
         uses: actions/cache@v4
         with:
@@ -55,14 +45,11 @@ jobs:
           restore-keys: |
             tedx-master-db-
 
-      # ── 5. Run the master updater ─────────────────────────
       - name: Run TEDx Master Updater
         env:
-          # Email settings
-          EMAIL_FROM:     ${{ secrets.EMAIL_FROM }}
-          EMAIL_TO:       ${{ secrets.EMAIL_TO }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          # GHL webhook — paste your GHL inbound webhook URL here
+          EMAIL_FROM:      ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO:        ${{ secrets.EMAIL_TO }}
+          EMAIL_PASSWORD:  ${{ secrets.EMAIL_PASSWORD }}
           GHL_WEBHOOK_URL: ${{ secrets.GHL_WEBHOOK_URL }}
         run: |
           SEED_ARG=""
@@ -71,8 +58,6 @@ jobs:
           fi
           python tedx_master_updater.py $SEED_ARG
 
-      # ── 6. Upload results as downloadable artifacts ───────
-      # Available in GitHub Actions tab for 30 days
       - name: Upload database artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -83,16 +68,11 @@ jobs:
             TEDx_Mastery_Master_Database.csv
             tedx_new_events_this_week.csv
 
-      # ── 7. Also run global scraper for new event discovery ─
-      - name: Run global scraper (new event discovery)
+      - name: Run global scraper
         env:
           GHL_WEBHOOK_URL: ${{ secrets.GHL_WEBHOOK_URL }}
         run: |
-          REGION_ARG=""
-          if [ -n "${{ github.event.inputs.regions }}" ]; then
-            REGION_ARG="--regions \"${{ github.event.inputs.regions }}\""
-          fi
-          python tedx_global_scraper.py $REGION_ARG || true
+          python tedx_global_scraper.py || true
 
       - name: Upload global scraper results
         uses: actions/upload-artifact@v4
